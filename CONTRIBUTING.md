@@ -104,8 +104,8 @@ Have an idea? Open an issue with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/egmtm/EGM-Downloader.git
-cd EGM-Downloader
+git clone https://github.com/zamasshange/downloader.git
+cd downloader
 
 # Wire the pre-commit and pre-push hooks (one-time per clone)
 # Runs version sync + parity check + full test suite before every commit and push

@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      EGM_DEV_MODE: "1"
+      FLASK_HOST: "0.0.0.0"
+      EGM_ALLOWED_HOSTS: "*"
+      PORT: "8080"
+    volumes:
+      - egm-data:/app/data
+
+volumes:
+  egm-data:

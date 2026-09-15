@@ -16,7 +16,7 @@ Instead, report security concerns through one of these methods:
 Send details to: **contact@egerena.com**
 
 #### Option 2: GitHub Private Vulnerability Reporting
-Use GitHub's [private vulnerability reporting feature](https://github.com/egmtm/EGM-Downloader/security/advisories/new)
+Use GitHub's [private vulnerability reporting feature](https://github.com/zamasshange/downloader/security/advisories/new)
 
 ### What to Include
 
@@ -79,13 +79,13 @@ When a security vulnerability is confirmed:
 | Latest  | ✅ Yes    |
 | < Latest | ❌ No — please update to the latest version |
 
-We provide security updates for the latest stable release only. Users on older versions should upgrade to the latest version available at https://egerena.com or https://github.com/egmtm/EGM-Downloader/releases.
+We provide security updates for the latest stable release only. Users on older versions should upgrade to the latest version available at https://egerena.com or https://github.com/zamasshange/downloader/releases.
 
 ## Security Best Practices for Users
 
 ### General Recommendations
 
-- ✅ **Download from official sources only** - https://egerena.com or https://github.com/egmtm/EGM-Downloader
+- ✅ **Download from official sources only** - https://egerena.com or https://github.com/zamasshange/downloader
 - ✅ **Keep software updated** - Enable auto-updates (Windows/Mac) or check regularly (Linux)
 - ✅ **Verify checksums** - When available, verify file integrity
 - ✅ **Use antivirus software** - Keep your system protected
@@ -230,7 +230,7 @@ EGM Downloader is a tool designed for lawful purposes. Users are responsible for
 For any security concerns or questions about this policy:
 
 **Email:** contact@egerena.com  
-**GitHub:** [@egmtm](https://github.com/egmtm)
+**GitHub:** [@zamasshange](https://github.com/zamasshange/downloader)
 
 ---
 

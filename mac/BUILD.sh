@@ -223,7 +223,7 @@ FEATURES:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Website: https://egerena.com/apps/egmac.html
-GitHub: https://github.com/egmtm/EGM-Downloader
+GitHub: https://github.com/zamasshange/downloader
 X: https://x.com/EGMDownloader
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -233,7 +233,7 @@ X: https://x.com/EGMDownloader
 GNU Affero General Public License v3.0 (AGPL-3.0)
 This is copyleft software. Modifications must be released under the
 same license. See the LICENSE file in the GitHub repository for the
-full terms: https://github.com/egmtm/EGM-Downloader/blob/main/LICENSE
+full terms: https://github.com/zamasshange/downloader/blob/main/LICENSE
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

@@ -1,5 +1,6 @@
 # ── Python ────────────────────────────────────────────────────
 __pycache__/
+ffmpeg_bin/
 *.pyc
 *.pyo
 *.pyd
@@ -45,7 +46,9 @@ linux/dist/
 
 # ── User data ─────────────────────────────────────────────────
 egm_settings.json
+egm_history.json
 cookies.txt
+thumbnails/
 
 # ── Dev artifacts ──────────────────────────────────────────────
 electron/run_dev.bat

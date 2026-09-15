@@ -28,6 +28,14 @@ app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB global request body l
 # via a DNS-rebinding attack. Reject any request whose Host header isn't a
 # loopback address. Cheap belt-and-suspenders.
 _ALLOWED_HOSTS = {"127.0.0.1", "localhost", "[::1]"}
+# Optional extra Host values for self-hosted / container deploys (comma-separated).
+# Use EGM_ALLOWED_HOSTS=* only on a trusted private network — that skips the Host check.
+_ALLOWED_HOSTS.update(
+    h.strip().lower()
+    for h in os.environ.get("EGM_ALLOWED_HOSTS", "").split(",")
+    if h.strip() and h.strip() != "*"
+)
+_ALLOW_ANY_HOST = os.environ.get("EGM_ALLOWED_HOSTS", "").strip() == "*"
 
 # Outbound HTTP whitelist for *app maintenance/update* traffic only.
 #
@@ -237,10 +245,11 @@ def _extract_host(host):
 
 @app.before_request
 def _verify_host_header():
-    host_only = _extract_host(request.host)
-    if host_only and host_only not in _ALLOWED_HOSTS:
-        _sec_event(f"Host header rejected: {request.host!r} on {request.path}")
-        abort(403)
+    if not _ALLOW_ANY_HOST:
+        host_only = _extract_host(request.host)
+        if host_only and host_only not in _ALLOWED_HOSTS:
+            _sec_event(f"Host header rejected: {request.host!r} on {request.path}")
+            abort(403)
     # 2. API token check (per-session Electron token)
     if _API_TOKEN and request.path.startswith("/api/") and request.path not in _TOKEN_EXEMPT and not request.path.startswith(_TOKEN_EXEMPT_PREFIX):
         if not hmac.compare_digest(
@@ -685,7 +694,13 @@ def _save_settings(data: dict):
             _egm_log(f"settings save failed: {e}")
 
 def _get_last_folder() -> str:
-    return _load_settings().get("last_folder", "")
+    folder = _load_settings().get("last_folder", "")
+    if folder:
+        return folder
+    if _IS_DEV:
+        downloads = Path.home() / "Downloads"
+        return str(downloads if downloads.is_dir() else Path.home())
+    return ""
 
 # ── Subscriptions data ────────────────────────────────────────────────────────
 _subs_cache = None
@@ -871,17 +886,110 @@ def _get_ffmpeg_url():
 FFMPEG_URL = FFMPEG_URL_STABLE
 FFMPEG_TAG_FILE = FFMPEG_DIR / "build_tag.txt"
 
-# ── Deno: bundled JS runtime required for YouTube (no admin, no PATH needed) ──
-DENO_DIR     = BASE_DIR / "runtime"
-DENO_EXE     = DENO_DIR / "deno.exe"
-# Direct zip URL — single deno.exe, no installer, no UAC required
-DENO_ZIP_URL = ("https://github.com/denoland/deno/releases/latest/download/"
-                "deno-x86_64-pc-windows-msvc.zip")
+_MAC_ARM = sys.platform == "darwin" and getattr(os, "uname", lambda: None)() is not None and os.uname().machine.lower() in ("arm64", "aarch64")
+_MARTIN_BASE = "https://ffmpeg.martin-riedl.de"
+_MARTIN_ARCH = "arm64" if _MAC_ARM else "amd64"
 
-def ensure_ffmpeg():
-    if (FFMPEG_DIR / "ffmpeg.exe").exists() and (FFMPEG_DIR / "ffprobe.exe").exists():
+def _ffmpeg_exe() -> Path:
+    bundled = FFMPEG_DIR / ("ffmpeg.exe" if sys.platform == "win32" else "ffmpeg")
+    if bundled.exists() or sys.platform == "win32":
+        return bundled
+    found = shutil.which("ffmpeg")
+    return Path(found) if found else bundled
+
+def _ffprobe_exe() -> Path:
+    bundled = FFMPEG_DIR / ("ffprobe.exe" if sys.platform == "win32" else "ffprobe")
+    if bundled.exists() or sys.platform == "win32":
+        return bundled
+    found = shutil.which("ffprobe")
+    return Path(found) if found else bundled
+
+# ── Deno: bundled JS runtime required for YouTube (no admin, no PATH needed) ──
+DENO_DIR = BASE_DIR / "runtime"
+if sys.platform == "win32":
+    DENO_EXE = DENO_DIR / "deno.exe"
+    DENO_ZIP_NAME = "deno-x86_64-pc-windows-msvc.zip"
+    DENO_ARCHIVE_MEMBER = "deno.exe"
+elif sys.platform == "darwin":
+    DENO_EXE = DENO_DIR / "deno"
+    DENO_ZIP_NAME = "deno-aarch64-apple-darwin.zip" if _MAC_ARM else "deno-x86_64-apple-darwin.zip"
+    DENO_ARCHIVE_MEMBER = "deno"
+else:
+    DENO_EXE = DENO_DIR / "deno"
+    DENO_ZIP_NAME = "deno-x86_64-unknown-linux-gnu.zip"
+    DENO_ARCHIVE_MEMBER = "deno"
+DENO_ZIP_URL = f"https://github.com/denoland/deno/releases/latest/download/{DENO_ZIP_NAME}"
+
+def _ensure_ffmpeg_macos():
+    """Download native macOS ffmpeg/ffprobe (Windows zip is not usable here)."""
+    ffmpeg_bin = FFMPEG_DIR / "ffmpeg"
+    ffprobe_bin = FFMPEG_DIR / "ffprobe"
+    _egm_log("Downloading ffmpeg and ffprobe (first run only)...")
+    FFMPEG_DIR.mkdir(parents=True, exist_ok=True)
+    tmp_ffmpeg = FFMPEG_DIR / "ffmpeg_tmp.zip"
+    tmp_ffprobe = FFMPEG_DIR / "ffprobe_tmp.zip"
+    ch = _load_settings().get("ffmpeg_channel", "stable")
+    build = "snapshot" if ch == "nightly" else "release"
+    try:
+        ffmpeg_redirect = f"{_MARTIN_BASE}/redirect/latest/macos/{_MARTIN_ARCH}/{build}/ffmpeg.zip"
+        req = urllib.request.Request(ffmpeg_redirect, headers={"User-Agent": "EGM-Downloader"})
+        with _safe_urlopen(req, HTTP_TIMEOUT_LONG) as r:
+            final_url = r.url
+            with open(tmp_ffmpeg, "wb") as f:
+                shutil.copyfileobj(r, f)
+        ok, msg = _verify_upstream_checksum(tmp_ffmpeg, final_url + ".sha256", "ffmpeg.zip")
+        _egm_log(f"{msg}")
+        if not ok:
+            tmp_ffmpeg.unlink(missing_ok=True)
+            return False
+        with zipfile.ZipFile(tmp_ffmpeg, "r") as z:
+            if "ffmpeg" not in z.namelist():
+                raise RuntimeError("ffmpeg binary not found in zip")
+            _safe_extract(z, "ffmpeg", FFMPEG_DIR)
+        tmp_ffmpeg.unlink(missing_ok=True)
+
+        ffprobe_redirect = f"{_MARTIN_BASE}/redirect/latest/macos/{_MARTIN_ARCH}/{build}/ffprobe.zip"
+        req = urllib.request.Request(ffprobe_redirect, headers={"User-Agent": "EGM-Downloader"})
+        with _safe_urlopen(req, HTTP_TIMEOUT_LONG) as r:
+            final_url = r.url
+            with open(tmp_ffprobe, "wb") as f:
+                shutil.copyfileobj(r, f)
+        ok, msg = _verify_upstream_checksum(tmp_ffprobe, final_url + ".sha256", "ffprobe.zip")
+        _egm_log(f"{msg}")
+        if not ok:
+            tmp_ffprobe.unlink(missing_ok=True)
+            return False
+        with zipfile.ZipFile(tmp_ffprobe, "r") as z:
+            if "ffprobe" not in z.namelist():
+                raise RuntimeError("ffprobe binary not found in zip")
+            _safe_extract(z, "ffprobe", FFMPEG_DIR)
+        tmp_ffprobe.unlink(missing_ok=True)
+        os.chmod(ffmpeg_bin, 0o755)
+        os.chmod(ffprobe_bin, 0o755)
+        try:
+            FFMPEG_TAG_FILE.write_text(_get_latest_ffmpeg_tag() + " · " + _load_settings().get("ffmpeg_channel", "stable"))
+        except Exception:
+            pass
         _egm_log("ffmpeg ready.")
         return True
+    except Exception as e:
+        _egm_log(f"ffmpeg download failed: {e}")
+        for t in (tmp_ffmpeg, tmp_ffprobe):
+            try:
+                t.unlink(missing_ok=True)
+            except Exception:
+                pass
+        return False
+
+def ensure_ffmpeg():
+    if _ffmpeg_exe().exists() and _ffprobe_exe().exists():
+        _egm_log("ffmpeg ready.")
+        return True
+    if sys.platform == "darwin":
+        return _ensure_ffmpeg_macos()
+    if sys.platform != "win32":
+        _egm_log("ffmpeg not found — install ffmpeg and retry")
+        return False
     _egm_log("Downloading ffmpeg (first run only)...")
     FFMPEG_DIR.mkdir(exist_ok=True)
     tmp = FFMPEG_DIR / "ffmpeg_tmp.zip"
@@ -916,7 +1024,9 @@ def ensure_ffmpeg():
         return False
 
 def _ffmpeg_args():
-    return ["--ffmpeg-location", str(FFMPEG_DIR)]
+    exe = _ffmpeg_exe()
+    loc = exe.parent if exe.exists() else FFMPEG_DIR
+    return ["--ffmpeg-location", str(loc)]
 
 
 def _deno_args():
@@ -1091,7 +1201,7 @@ def _run_download_slot(job_id, *rest):
         if job.get("cancelled"):
             job["status"] = "cancelled"; job["_finished_at"] = time.time()
             return
-        ff = FFMPEG_DIR / "ffmpeg.exe"
+        ff = _ffmpeg_exe()
         if not ff.exists():
             waited = 0
             while not ff.exists() and waited < 180:
@@ -1134,7 +1244,7 @@ def _detect_hw_encoder():
     global _HW_ENCODER_CACHE
     if _HW_ENCODER_CACHE is not None:
         return _HW_ENCODER_CACHE
-    ffmpeg = FFMPEG_DIR / "ffmpeg.exe"
+    ffmpeg = _ffmpeg_exe()
     candidates = [
         ("h264_nvenc", ["-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", "23", "-b:v", "0"]),
         ("h264_qsv",   ["-c:v", "h264_qsv", "-preset", "veryfast", "-global_quality", "23"]),
@@ -1280,8 +1390,8 @@ def _ensure_h264(job_id, path, job):
     Defensive — on any failure it returns the original file, so a download is never lost."""
     path = str(path)
     try:
-        ffprobe = FFMPEG_DIR / "ffprobe.exe"
-        ffmpeg  = FFMPEG_DIR / "ffmpeg.exe"
+        ffprobe = _ffprobe_exe()
+        ffmpeg  = _ffmpeg_exe()
         if not ffprobe.exists() or not ffmpeg.exists():
             return path
         r = _run(str(ffprobe), "-v", "error", "-select_streams", "v:0",
@@ -1314,8 +1424,8 @@ def _upscale_to_preset(job_id, path, job, target):
     Defensive like _ensure_h264 — any failure returns the original file."""
     path = str(path)
     try:
-        ffprobe = FFMPEG_DIR / "ffprobe.exe"
-        ffmpeg  = FFMPEG_DIR / "ffmpeg.exe"
+        ffprobe = _ffprobe_exe()
+        ffmpeg  = _ffmpeg_exe()
         if not ffprobe.exists() or not ffmpeg.exists():
             return path
         r = _run(str(ffprobe), "-v", "error", "-select_streams", "v:0",
@@ -1843,7 +1953,7 @@ def check_status(job_id):
 def get_settings():
     s = _load_settings()
     return jsonify({
-        "last_folder":             s.get("last_folder", ""),
+        "last_folder":             _get_last_folder(),
         "concurrency":             s.get("concurrency", 6),
         "fragments":               s.get("fragments", 4),
         "settings_open":           s.get("settings_open", True),
@@ -1966,7 +2076,7 @@ def _get_ytdlp_version():
     except Exception: return "unknown"
 
 def _get_ffmpeg_version():
-    exe = FFMPEG_DIR / "ffmpeg.exe"
+    exe = _ffmpeg_exe()
     if not exe.exists(): return "not installed"
     tag = _get_ffmpeg_installed_tag()
     if tag: return tag
@@ -2318,7 +2428,7 @@ def _run_deno_install():
         assets = release.get("assets", [])
         url = next(
             (a["browser_download_url"] for a in assets
-             if a["name"] == "deno-x86_64-pc-windows-msvc.zip"),
+             if a["name"] == DENO_ZIP_NAME),
             DENO_ZIP_URL)  # fallback to latest redirect URL
         version_label = tag or "latest"
         log(f"Downloading Deno {version_label} (~35 MB)...")
@@ -2353,17 +2463,19 @@ def _run_deno_install():
             deno_install_status["error"] = "Checksum mismatch — install aborted"
             deno_install_status["done"]  = True
             return
-        log("Extracting deno.exe...")
+        log(f"Extracting {DENO_ARCHIVE_MEMBER}...")
         with zipfile.ZipFile(tmp, "r") as z:
-            if "deno.exe" not in z.namelist():
-                raise RuntimeError("deno.exe not found in zip archive")
-            _safe_extract(z, "deno.exe", DENO_DIR)
+            if DENO_ARCHIVE_MEMBER not in z.namelist():
+                raise RuntimeError(f"{DENO_ARCHIVE_MEMBER} not found in zip archive")
+            _safe_extract(z, DENO_ARCHIVE_MEMBER, DENO_DIR)
         tmp.unlink(missing_ok=True)
+        if sys.platform != "win32":
+            os.chmod(DENO_EXE, 0o755)
 
         # Verify it actually runs
         ver = _get_deno_version()
         if ver in ("unknown", "not installed"):
-            raise RuntimeError("deno.exe extracted but failed to run")
+            raise RuntimeError(f"{DENO_ARCHIVE_MEMBER} extracted but failed to run")
 
         log(f"Deno {ver} ready. Done.")
         deno_install_status["done"] = True
@@ -3167,7 +3279,10 @@ if __name__ == "__main__":
                 return p
         return 8899
     port = _resolve_port()
-    host = "127.0.0.1"  # always localhost — never exposed to network
+    # Default: localhost only. Set FLASK_HOST=0.0.0.0 for container / LAN deploys.
+    host = os.environ.get("FLASK_HOST", "127.0.0.1").strip() or "127.0.0.1"
+    if host not in {"127.0.0.1", "0.0.0.0", "::", "::1", "localhost"}:
+        host = "127.0.0.1"
     threading.Thread(target=lambda: app.run(host=host,port=port,threaded=True,use_reloader=False),
                      daemon=True, name="flask").start()
 

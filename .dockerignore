@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+node_modules
+windows
+mac
+linux
+tests
+screenshots
+ffmpeg_bin
+*.md
+.DS_Store

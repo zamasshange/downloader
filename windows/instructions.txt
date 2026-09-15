@@ -71,5 +71,5 @@ TROUBLESHOOTING
 SUPPORT
 ────────
   https://egerena.com/apps/egm.html
-  https://github.com/egmtm/EGM-Downloader
+  https://github.com/zamasshange/downloader
   https://x.com/EGMDownloader

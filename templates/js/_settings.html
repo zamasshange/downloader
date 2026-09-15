@@ -7,6 +7,15 @@
       document.getElementById('dl-dir').value = s.last_folder;
       document.getElementById('open-folder-btn').disabled = false;
     }
+    if (!window.electronAPI?.pickFolder) {
+      const input = document.getElementById('dl-dir');
+      input.removeAttribute('readonly');
+      input.placeholder = 'Enter a download folder path…';
+      input.addEventListener('change', async () => {
+        const v = input.value.trim();
+        if (v) await setDownloadFolder(v);
+      });
+    }
     if (s.concurrency) {
       const sel = document.getElementById('concurrency-sel');
       if (sel) sel.value = String(s.concurrency);
@@ -369,19 +378,35 @@ document.getElementById('adv-shortcut-btn')?.addEventListener('click', async () 
 });
 
 document.getElementById('browse-btn').addEventListener('click', async () => {
-  const picked = await window.electronAPI.pickFolder(chosenPath || '');
-  if (!picked) return;
+  if (window.electronAPI?.pickFolder) {
+    const picked = await window.electronAPI.pickFolder(chosenPath || '');
+    if (!picked) return;
+    await setDownloadFolder(picked);
+    return;
+  }
+  const current = chosenPath || document.getElementById('dl-dir').value.trim();
+  const typed = window.prompt('Download folder path', current || '');
+  if (!typed) return;
+  await setDownloadFolder(typed.trim());
+});
+document.getElementById('open-folder-btn').addEventListener('click', async () => {
+  const folder = chosenPath || document.getElementById('dl-dir').value.trim();
+  if (window.electronAPI?.openFolder) {
+    const r = await window.electronAPI.openFolder(folder);
+    if (r && r.error) toast(r.error, 'err');
+    return;
+  }
+  const r = await post('/api/open-folder', { folder });
+  if (r.error) toast(r.error, 'err');
+});
+
+async function setDownloadFolder(picked) {
   chosenPath = picked;
   document.getElementById('dl-dir').value = picked;
   document.getElementById('open-folder-btn').disabled = false;
   await post('/api/settings/save', { last_folder: picked });
   toast(i18nGet('toast.settings.folder_selected') || 'Folder selected', 'ok');
-});
-document.getElementById('open-folder-btn').addEventListener('click', async () => {
-  const folder = chosenPath || document.getElementById('dl-dir').value.trim();
-  const r = await window.electronAPI.openFolder(folder);
-  if (r && r.error) toast(r.error, 'err');
-});
+}
 
 // ── Update panel ──────────────────────────────────────────────────────────────
 document.getElementById('check-updates-btn').addEventListener('click', async () => {
@@ -733,25 +758,42 @@ async function refreshCookieCard() {
 
 // ── IPC-based cookies file browse (native dialog, more reliable than HTML file input) ─
 async function browseCookiesIPC() {
-  if (!window.electronAPI?.openFile) {
+  if (window.electronAPI?.openFile) {
+    try {
+      const result = await window.electronAPI.openFile({ type: 'cookies' });
+      if (!result || result.canceled) return;
+      if (result.error) { toast((i18nGet('toast.settings.file_read_failed') || 'Failed to read file') + ': ' + result.error, 'err'); return; }
+      await saveCookiesText(result.content);
+    } catch (e) { toast((i18nGet('toast.settings.browse_error') || 'Browse error') + ': ' + e.message, 'err'); }
+    return;
+  }
+  const input = document.getElementById('ck-file-input');
+  if (!input) {
     toast(i18nGet('toast.settings.browse_unavailable') || 'File browse not available — try restarting the app', 'err');
     return;
   }
-  try {
-    const result = await window.electronAPI.openFile({ type: 'cookies' });
-    if (!result || result.canceled) return;
-    if (result.error) { toast((i18nGet('toast.settings.file_read_failed') || 'Failed to read file') + ': ' + result.error, 'err'); return; }
-    const text = result.content;
-    if (!text.includes('# Netscape') && !text.trim().startsWith('#')) {
-      toast(i18nGet('toast.settings.invalid_cookies_file') || 'This does not look like a valid cookies.txt file', 'err');
-      return;
-    }
-    const r = await post('/api/cookies/save', { content: text });
-    if (r.error) { toast((i18nGet('toast.settings.cookies_save_failed') || 'Failed to save cookies') + ': ' + r.error, 'err'); return; }
-    toast(i18nGet('toast.cookies.loaded') || 'cookies.txt loaded — authenticated downloads enabled', 'ok');
-    await refreshCookieCard();
-  } catch (e) { toast((i18nGet('toast.settings.browse_error') || 'Browse error') + ': ' + e.message, 'err'); }
+  input.value = '';
+  input.click();
 }
+
+async function saveCookiesText(text) {
+  if (!text.includes('# Netscape') && !text.trim().startsWith('#')) {
+    toast(i18nGet('toast.settings.invalid_cookies_file') || 'This does not look like a valid cookies.txt file', 'err');
+    return;
+  }
+  const r = await post('/api/cookies/save', { content: text });
+  if (r.error) { toast((i18nGet('toast.settings.cookies_save_failed') || 'Failed to save cookies') + ': ' + r.error, 'err'); return; }
+  toast(i18nGet('toast.cookies.loaded') || 'cookies.txt loaded — authenticated downloads enabled', 'ok');
+  await refreshCookieCard();
+}
+
+document.getElementById('ck-file-input')?.addEventListener('change', async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  try {
+    await saveCookiesText(await file.text());
+  } catch (e) { toast((i18nGet('toast.settings.browse_error') || 'Browse error') + ': ' + e.message, 'err'); }
+});
 
 async function clearCookies() {
   try {

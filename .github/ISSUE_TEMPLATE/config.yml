@@ -4,8 +4,8 @@ contact_links:
     url: mailto:contact@egerena.com
     about: Please report security vulnerabilities via email, not public issues
   - name: 💬 Discussions
-    url: https://github.com/egmtm/EGM-Downloader/discussions
+    url: https://github.com/zamasshange/downloader/discussions
     about: Ask questions and discuss ideas with the community
   - name: 📚 Documentation
-    url: https://github.com/egmtm/EGM-Downloader/blob/main/README.md
+    url: https://github.com/zamasshange/downloader/blob/main/README.md
     about: Read the documentation for help and guides

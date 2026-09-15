@@ -5,12 +5,12 @@
   
   <p>
     <img src="https://img.shields.io/badge/dynamic/json?url=https://egerena.com/version.json&query=version&label=version&style=flat-square&color=0078b0" alt="Version"/>
-    <img src="https://github.com/egmtm/EGM-Downloader/workflows/Validate%20Version%20Sync/badge.svg" alt="Version Sync"/>
-    <img src="https://github.com/egmtm/EGM-Downloader/workflows/Lint%20Python/badge.svg" alt="Python Lint"/>
-    <img src="https://github.com/egmtm/EGM-Downloader/workflows/Lint%20JavaScript/badge.svg" alt="JavaScript Lint"/>
-    <img src="https://github.com/egmtm/EGM-Downloader/workflows/Tests/badge.svg" alt="Tests"/>
+    <img src="https://github.com/zamasshange/downloader/workflows/Validate%20Version%20Sync/badge.svg" alt="Version Sync"/>
+    <img src="https://github.com/zamasshange/downloader/workflows/Lint%20Python/badge.svg" alt="Python Lint"/>
+    <img src="https://github.com/zamasshange/downloader/workflows/Lint%20JavaScript/badge.svg" alt="JavaScript Lint"/>
+    <img src="https://github.com/zamasshange/downloader/workflows/Tests/badge.svg" alt="Tests"/>
     <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL_3.0-blue.svg" alt="License"/></a>
-    <a href="https://github.com/egmtm/EGM-Downloader/discussions"><img src="https://img.shields.io/badge/github-discussions-181717?logo=github" alt="GitHub Discussions"/></a>
+    <a href="https://github.com/zamasshange/downloader/discussions"><img src="https://img.shields.io/badge/github-discussions-181717?logo=github" alt="GitHub Discussions"/></a>
     <a href="https://x.com/EGMDownloader"><img src="https://img.shields.io/badge/follow-%40EGMDownloader-000000?logo=x&logoColor=white" alt="Follow on X"/></a>
     <img src="https://img.shields.io/badge/Electron-44.3.0-47848F?logo=electron&logoColor=white" alt="Electron"/>
     <img src="https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white" alt="Windows"/>
@@ -197,7 +197,7 @@
 **Requirements:** Windows 10/11 (64-bit) · **Python 3.10+** — install from [python.org](https://www.python.org/downloads/) and tick “Add Python to PATH”  
 **No installer, no registry** — runs from any folder or USB drive (system Python 3.10+ is used only to bootstrap; the app then downloads a private embedded Python and runs on that. Node, Electron & ffmpeg are fetched on first run)  
 **Code Signed:** Portable is signed with an IV code signing certificate. SmartScreen may show a warning on first run until the certificate builds reputation.
-**Auto-Update:** ❌ Manual — check the [releases page](https://github.com/egmtm/EGM-Downloader/releases)
+**Auto-Update:** ❌ Manual — check the [releases page](https://github.com/zamasshange/downloader/releases)
 
 ### macOS
 🔗 **Platform page:** [mac.egerena.com](https://mac.egerena.com)
@@ -215,7 +215,7 @@
 **SHA256:** `e89213afe3ba0498227e4b6e822465d1192b94f06e4f2958a8606805e1c200ac`  
 **Format:** AppImage (Universal)  
 **Supported Distros:** Ubuntu 20.04+, Mint 20+, Pop!_OS, Fedora 39+, Arch, and more
-**Auto-Update:** ❌ Manual — check the [releases page](https://github.com/egmtm/EGM-Downloader/releases)
+**Auto-Update:** ❌ Manual — check the [releases page](https://github.com/zamasshange/downloader/releases)
 
 ---
 
@@ -426,7 +426,7 @@ See [CREDITS.md](CREDITS.md) for complete acknowledgments and licenses.
 - Install FUSE: `sudo apt install libfuse2` (Ubuntu/Debian)
 - Run from terminal to see errors
 
-**Need more help?** [Open an issue on GitHub](https://github.com/egmtm/EGM-Downloader/issues)
+**Need more help?** [Open an issue on GitHub](https://github.com/zamasshange/downloader/issues)
 
 ---
 
@@ -442,8 +442,8 @@ This project is licensed under the **GNU Affero General Public License v3.0 (AGP
 
 ## 📞 Support & Security
 
-- 🐛 **Bug Reports / Feature Requests:** [Open an Issue](https://github.com/egmtm/EGM-Downloader/issues)
+- 🐛 **Bug Reports / Feature Requests:** [Open an Issue](https://github.com/zamasshange/downloader/issues)
 - 🐦 **Updates & Announcements:** [@EGMDownloader](https://x.com/EGMDownloader) on X
 - 📖 **Contributing:** [Read CONTRIBUTING.md](CONTRIBUTING.md)
-- 🔒 **Security Vulnerabilities:** Do not open a public issue — email contact@egerena.com or use [GitHub's private vulnerability reporting](https://github.com/egmtm/EGM-Downloader/security/advisories/new). We aim to respond within 48 hours.
+- 🔒 **Security Vulnerabilities:** Do not open a public issue — email contact@egerena.com or use [GitHub's private vulnerability reporting](https://github.com/zamasshange/downloader/security/advisories/new). We aim to respond within 48 hours.
 # downloader

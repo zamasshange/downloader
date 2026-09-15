@@ -2299,6 +2299,7 @@
         </div>
         <div style="display:flex;justify-content:center;width:100%">
           <div id="ck-not-loaded" class="set-cookie-actions" style="display:flex">
+            <input type="file" id="ck-file-input" accept=".txt,text/plain" style="display:none"/>
             <button class="btn btn-ghost btn-sm" onclick="browseCookiesIPC()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2"/></svg> <span data-i18n="cookies.btn.browse">Browse</span></button>
           </div>
           <div id="ck-loaded" class="set-cookie-actions-loaded" style="display:none">
@@ -2346,7 +2347,7 @@
   </div>
   <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap">
     <a href="{{ platform_url }}" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--text2);text-decoration:none;border:1px solid var(--border);border-radius:20px;padding:1px 9px;background:var(--surf)" data-i18n="footer.link.website">egerena.com</a>
-    <a href="https://github.com/egmtm/EGM-Downloader" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--text2);text-decoration:none;border:1px solid var(--border);border-radius:20px;padding:1px 9px;background:var(--surf)" data-i18n="footer.link.github">GitHub</a>
+    <a href="https://github.com/zamasshange/downloader" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--text2);text-decoration:none;border:1px solid var(--border);border-radius:20px;padding:1px 9px;background:var(--surf)" data-i18n="footer.link.github">GitHub</a>
     <a href="https://x.com/EGMDownloader" target="_blank" rel="noopener" style="font-size:.68rem;color:var(--text2);text-decoration:none;border:1px solid var(--border);border-radius:20px;padding:1px 9px;background:var(--surf)">@EGMDownloader</a>
     <span id="footer-version-pill" style="font-size:.68rem;color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:1px 9px;background:var(--surf)">v1.3.12</span>
     <button id="footer-whatsnew-btn" style="font-size:.68rem;color:var(--text2);border:1px solid var(--border);border-radius:20px;padding:1px 9px;background:var(--surf);cursor:pointer;font-family:inherit" data-i18n="footer.btn.whatsnew">What's New</button>
