@@ -1,3 +1,3 @@
 # Extra packages for running the Flask UI as a website.
 # Install on top of requirements.txt:  pip install -r requirements.txt -r requirements-web.txt
-gunicorn>=22.0.0
+gunicorn>=26.2.0
