@@ -358,6 +358,12 @@ cp "$REPO_ROOT/static/badge-7.png"            "$PORTABLE_STAGE/static/"
 cp "$REPO_ROOT/static/badge-8.png"            "$PORTABLE_STAGE/static/"
 cp "$REPO_ROOT/static/badge-9.png"            "$PORTABLE_STAGE/static/"
 cp "$REPO_ROOT/static/badge-9plus.png"        "$PORTABLE_STAGE/static/"
+cp "$REPO_ROOT/static/xhuma-wordmark.png"     "$PORTABLE_STAGE/static/"
+cp "$REPO_ROOT/static/xhuma-mark-256.png"     "$PORTABLE_STAGE/static/"
+cp "$REPO_ROOT/static/favicon-32.png"         "$PORTABLE_STAGE/static/"
+cp "$REPO_ROOT/static/favicon-64.png"         "$PORTABLE_STAGE/static/"
+cp "$REPO_ROOT/static/apple-touch-icon.png"   "$PORTABLE_STAGE/static/"
+cp "$REPO_ROOT/static/xhuma-hero.jpg"         "$PORTABLE_STAGE/static/"
 
 # Electron
 cp "$REPO_ROOT/windows/electron/main.js"      "$PORTABLE_STAGE/electron/"

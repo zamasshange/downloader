@@ -10,7 +10,7 @@
   ],
   "_last_updated": "2026-07-17",
   "strings": {
-    "app.title": "EGM Downloader",
+    "app.title": "xhuma",
     "app.subtitle": "YouTube · TikTok · Instagram · Twitter/X · Reddit · Facebook · Twitch · Vimeo & 他{0}サイト",
     "app.tagline": "あなた専用のメディアダウンローダー、対応サイト",
     "app.tagline.sites": "1000以上",
@@ -361,7 +361,7 @@
     "fetch.error.prefix": "Error",
     "fetch.error.no_metadata": "動画情報を取得できませんでした。URLがサポートされていない可能性があります。",
     "fetch.error.url_scheme": "httpおよびhttpsのURLのみサポートされています。",
-    "footer.link.website": "egerena.com",
+    "footer.link.website": "xhuma.cc",
     "footer.link.github": "GitHub",
     "footer.btn.help": "ヘルプ",
     "help.title": "ヘルプ",

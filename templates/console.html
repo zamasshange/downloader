@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Diagnostics — EGM Downloader</title>
+<title>Diagnostics — xhuma</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="64x64" href="/static/favicon-64.png"/>
+<link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -40,6 +46,7 @@
 
   .log-wrap::-webkit-scrollbar{width:8px}
   .log-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+  {% include 'xhuma_chrome.html' %}
 </style>
 </head>
 <body>
@@ -93,7 +100,7 @@ if (window.electronAPI && window.electronAPI.onThemeChanged) {
   window.electronAPI.onThemeChanged(t => applyConsoleTheme(t));
 }
 document.addEventListener('i18n:ready', () => {
-  document.title = (i18nGet('console.title') || 'Diagnostics') + ' — EGM Downloader';
+  document.title = (i18nGet('console.title') || 'Diagnostics') + ' — xhuma';
 });
 
 // ── Live log ─────────────────────────────────────────────────────────────────

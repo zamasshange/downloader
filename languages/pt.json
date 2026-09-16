@@ -10,7 +10,7 @@
   ],
   "_last_updated": "2026-07-17",
   "strings": {
-    "app.title": "EGM Downloader",
+    "app.title": "xhuma",
     "app.subtitle": "YouTube · TikTok · Instagram · Twitter/X · Reddit · Facebook · Twitch · Vimeo e mais {0} sites",
     "app.tagline": "Seu downloader de mídia pessoal para",
     "app.tagline.sites": "1000+ sites",
@@ -361,7 +361,7 @@
     "fetch.error.prefix": "Error",
     "fetch.error.no_metadata": "Não foi possível obter informações do vídeo. A URL pode não ser compatível.",
     "fetch.error.url_scheme": "Apenas URLs http e https são suportadas.",
-    "footer.link.website": "egerena.com",
+    "footer.link.website": "xhuma.cc",
     "footer.link.github": "GitHub",
     "footer.btn.help": "Ajuda",
     "help.title": "Ajuda",

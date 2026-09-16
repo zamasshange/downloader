@@ -1804,7 +1804,7 @@ def _internal_error(e):
     return jsonify({"error": "internal server error"}), 500
 
 @app.route("/")
-def index(): return render_template("index.html", egm_token=_API_TOKEN, platform_url="https://egerena.com/apps/egm.html")
+def index(): return render_template("index.html", egm_token=_API_TOKEN, platform_url="https://xhuma.cc")
 
 @app.route("/api/info", methods=["POST"])
 def get_info():

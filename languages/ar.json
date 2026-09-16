@@ -10,7 +10,7 @@
   ],
   "_last_updated": "2026-07-17",
   "strings": {
-    "app.title": "EGM Downloader",
+    "app.title": "xhuma",
     "app.subtitle": "YouTube · TikTok · Instagram · Twitter/X · Reddit · Facebook · Twitch · Vimeo و {0} موقع آخر",
     "app.tagline": "أداة تحميل الوسائط الشخصية الخاصة بك لأكثر من",
     "app.tagline.sites": "+1000 موقع",
@@ -361,7 +361,7 @@
     "fetch.error.prefix": "Error",
     "fetch.error.no_metadata": "تعذر جلب معلومات الفيديو. قد يكون الرابط غير مدعوم.",
     "fetch.error.url_scheme": "يتم دعم روابط http و https فقط.",
-    "footer.link.website": "egerena.com",
+    "footer.link.website": "xhuma.cc",
     "footer.link.github": "GitHub",
     "footer.btn.help": "مساعدة",
     "help.title": "مساعدة",

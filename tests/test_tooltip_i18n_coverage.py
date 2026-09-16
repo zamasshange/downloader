@@ -90,6 +90,10 @@ INTERPOLATION_RE = re.compile(r"\$\{[^}]*\}")
 # real gap.
 ALLOWED_UNWIRED = {
     # (file, attr, text): reason
+    # The product name is a proper noun — it reads "xhuma" in every locale, so
+    # the header logo's alt text and the nav landmark label stay untranslated.
+    ("templates/index.html", "alt", "xhuma"): "brand name, identical in all locales",
+    ("templates/index.html", "aria-label", "xhuma"): "brand name, identical in all locales",
 }
 
 
