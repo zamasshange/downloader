@@ -1,4 +1,12 @@
 import os
+
+# Vercel Functions import this file with neither Electron's API token nor a
+# local EGM_DEV_MODE flag. Without these defaults the module raises on import
+# and the whole site returns FUNCTION_INVOCATION_FAILED.
+if os.environ.get("VERCEL") == "1":
+    os.environ.setdefault("EGM_DEV_MODE", "1")
+    os.environ.setdefault("EGM_DATA_DIR", "/tmp/xhuma-data")
+
 import sys
 import uuid
 import glob
@@ -15,6 +23,7 @@ import urllib.parse
 import zipfile
 import hashlib
 import shutil
+import tempfile
 import importlib.metadata
 from collections import deque
 from pathlib import Path
@@ -36,6 +45,19 @@ _ALLOWED_HOSTS.update(
     if h.strip() and h.strip() != "*"
 )
 _ALLOW_ANY_HOST = os.environ.get("EGM_ALLOWED_HOSTS", "").strip() == "*"
+# Hosting platforms publish the deployment's own hostname in the environment.
+# Trusting those keeps preview/production deploys reachable without anyone
+# hand-editing the allowlist for every generated URL.
+for _host_var in ("VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+    _platform_host = os.environ.get(_host_var, "").strip().lower()
+    if _platform_host:
+        _ALLOWED_HOSTS.add(_platform_host.split("//")[-1].split("/")[0].split(":")[0])
+# Public website hosts. The loopback-only Host check exists to stop DNS
+# rebinding against the local Electron server; on Vercel the platform already
+# routes the request, so we also skip the check entirely.
+_ALLOWED_HOSTS.update({"xhuma.cc", "www.xhuma.cc", "xhuma.vercel.app"})
+if os.environ.get("VERCEL") == "1":
+    _ALLOW_ANY_HOST = True
 
 # Outbound HTTP whitelist for *app maintenance/update* traffic only.
 #
@@ -297,6 +319,35 @@ def is_portable():
 
 PORTABLE_MODE = is_portable()
 
+_DATA_DIR: Path | None = None  # resolved once, on the first get_data_dir() call
+
+def _resolve_data_dir() -> Path:
+    """Pick the first writable directory out of the candidates for this install.
+
+    EGM_DATA_DIR wins when set, then the install's own directory (./data/ for
+    portable installs). Serverless hosts ship the code on a read-only
+    filesystem with only the temp dir writable, so the temp dir is the last
+    resort — without it the app cannot even finish importing there.
+    """
+    candidates = []
+    env_dir = os.environ.get("EGM_DATA_DIR", "").strip()
+    if env_dir:
+        candidates.append(Path(env_dir))
+    candidates.append(Path(__file__).parent.resolve() / "data" if PORTABLE_MODE else BASE_DIR)
+    candidates.append(Path(tempfile.gettempdir()) / "xhuma-data")
+    for d in candidates:
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+            # A real write, not os.access() — that reports the permission bits,
+            # which lie under Windows ACLs and sandboxed filesystems alike.
+            probe = d / f".write-probe-{os.getpid()}"
+            probe.touch()
+            probe.unlink()
+        except OSError:
+            continue
+        return d
+    return candidates[-1]
+
 def get_data_dir() -> Path:
     """Return the directory used for settings, history, cookies, and downloads list.
 
@@ -304,11 +355,10 @@ def get_data_dir() -> Path:
     entire app can be moved or run from USB without leaving traces elsewhere.
     Installed builds use the standard BASE_DIR (beside app.py inside $INSTDIR).
     """
-    if PORTABLE_MODE:
-        d = Path(__file__).parent.resolve() / "data"
-        d.mkdir(exist_ok=True)
-        return d
-    return BASE_DIR
+    global _DATA_DIR
+    if _DATA_DIR is None:
+        _DATA_DIR = _resolve_data_dir()
+    return _DATA_DIR
 
 # ── App version — keep in sync with index.html build stamp ───────────────────
 APP_VERSION           = "1.3.12"
@@ -541,7 +591,10 @@ def _read_installer_language():
 _history_lock = threading.Lock()
 _HISTORY_MAX  = 500  # soft cap on stored entries
 THUMBNAILS_DIR = get_data_dir() / "thumbnails"
-THUMBNAILS_DIR.mkdir(exist_ok=True)
+try:
+    THUMBNAILS_DIR.mkdir(exist_ok=True)
+except OSError:
+    pass  # read-only host: thumbnail caching is skipped, the app still serves
 
 def _load_history() -> list:
     try:
