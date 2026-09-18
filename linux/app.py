@@ -863,9 +863,10 @@ def _cookies_args() -> list:
     return []
 
 def _bgutil_args() -> list:
-    if not DENO_EXE.exists():
-        return ["--extractor-args", "youtube:fetch_pot=never"]
-    return []
+    if DENO_EXE.exists():
+        return []
+    return ["--extractor-args",
+            "youtube:player_client=android_sdkless,tv_embedded;fetch_pot=never"]
 
 def _ytdlp(*extra, timeout=None):
     # Use python -m yt_dlp so PYTHONPATH-installed updates take precedence over bundled

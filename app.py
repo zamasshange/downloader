@@ -1107,20 +1107,50 @@ def _cookies_args() -> list:
         return ["--cookies", str(COOKIES_FILE)]
     return []
 
-def _bgutil_args() -> list:
-    """When deno is absent, tell yt-dlp never to fetch PO Tokens — prevents
-    bgutil from attempting token generation and failing silently, which can
-    corrupt the format list and cause 'Requested format is not available'.
-    When deno IS present, bgutil generates tokens automatically; no extra args needed."""
-    if not DENO_EXE.exists():
-        return ["--extractor-args", "youtube:fetch_pot=never"]
-    return []
+def _apply_request_cookies(data) -> None:
+    """Write browser-supplied cookies to COOKIES_FILE for this invocation.
 
-def _ytdlp(*extra, timeout=None):
+    On Vercel the data dir is /tmp and does not survive across instances, so
+    the page keeps a copy in localStorage and sends it with fetch/download.
+    """
+    if not isinstance(data, dict):
+        return
+    text = data.get("cookies")
+    if not isinstance(text, str):
+        return
+    text = text.strip()
+    if not text or len(text) > 1 * 1024 * 1024:
+        return
+    if "# Netscape" not in text and not text.startswith("#"):
+        return
+    try:
+        _atomic_write_text(COOKIES_FILE, text, owner_only=True)
+    except OSError:
+        pass
+
+def _bgutil_args() -> list:
+    """YouTube extractor args.
+
+    Desktop with Deno: bgutil mints PO tokens and the default web client works.
+
+    No Deno (website / Vercel / first-run desktop): `fetch_pot=never` used to
+    leave the web client in place, which is exactly what YouTube bot-gates
+    ('Sign in to confirm you're not a bot'), especially from datacenter IPs.
+    android_sdkless still works logged-out. fetch_pot=never stops bgutil from
+    trying to spawn a missing deno.
+    """
+    if DENO_EXE.exists():
+        return []
+    return ["--extractor-args",
+            "youtube:player_client=android_sdkless,tv_embedded;fetch_pot=never"]
+
+def _ytdlp(*extra, timeout=None, use_cookies=True):
+    cookies = _cookies_args() if use_cookies else []
+    ipv4 = ["-4"] if os.environ.get("VERCEL") == "1" else []
     return _run_yt(sys.executable, "-m", "yt_dlp",
                    "--remote-components", "ejs:github",
-                   *_ffmpeg_args(), *_deno_args(), *_cookies_args(),
-                   *_bgutil_args(), *extra, timeout=timeout)
+                   *_ffmpeg_args(), *_deno_args(), *cookies,
+                   *_bgutil_args(), *ipv4, *extra, timeout=timeout)
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 def _safe_thumb_url(url) -> str:
@@ -1636,7 +1666,7 @@ def run_download(job_id, url, format_choice, format_id, download_dir, audio_code
             args += ["--write-subs", "--write-auto-subs", "--sub-langs", _sub_langs, "--embed-subs"]
     args.append(url)
 
-    cmd = [sys.executable, "-m", "yt_dlp", "--remote-components", "ejs:github"] + _ffmpeg_args() + _deno_args() + _cookies_args() + _bgutil_args() + args
+    cmd = [sys.executable, "-m", "yt_dlp", "--remote-components", "ejs:github"] + _ffmpeg_args() + _deno_args() + _cookies_args() + _bgutil_args() + (["-4"] if os.environ.get("VERCEL") == "1" else []) + args
     try:
         # Host only, not the full URL -- a private/signed URL can carry an
         # access token in its query string, and this line lands in
@@ -1862,19 +1892,31 @@ def index(): return render_template("index.html", egm_token=_API_TOKEN, platform
 @app.route("/api/info", methods=["POST"])
 def get_info():
     data = request.get_json(silent=True) or {}
+    _apply_request_cookies(data)
     url  = data.get("url", "").strip()
     if not url: return jsonify({"error": "No URL provided"}), 400
     if not url.lower().startswith(("http://", "https://")):
         return jsonify({"error": "Only http and https URLs are supported",
                         "error_key": "fetch.error.url_scheme"}), 400
     try:
-        r = _ytdlp("--no-playlist", "-j", url, timeout=60)
+        r = _ytdlp("--no-playlist", "-j", url, timeout=25)
         if r.returncode != 0:
             err = [l for l in r.stderr.splitlines() if l.strip() and not l.startswith("WARNING")]
             raw = err[-1] if err else "yt-dlp error"
-            code = _classify_error(raw)
-            return jsonify({"error": raw,
-                            "error_key": f"download.error.{code}" if code else None}), 400
+            # Cookies exported on a home IP often fail from a datacenter IP
+            # (Vercel). Retry logged-out with android_sdkless before giving up.
+            if _classify_error(raw) == "login":
+                r2 = _ytdlp("--no-playlist", "-j", url, timeout=25, use_cookies=False)
+                if r2.returncode == 0:
+                    r = r2
+                else:
+                    code = _classify_error(raw)
+                    return jsonify({"error": raw,
+                                    "error_key": f"download.error.{code}" if code else None}), 400
+            else:
+                code = _classify_error(raw)
+                return jsonify({"error": raw,
+                                "error_key": f"download.error.{code}" if code else None}), 400
         jl = next((l for l in r.stdout.splitlines() if l.strip().startswith("{")), None)
         if not jl: return jsonify({"error": "No metadata returned",
                                    "error_key": "fetch.error.no_metadata"}), 400
@@ -1892,6 +1934,7 @@ def get_info():
 @app.route("/api/playlist", methods=["POST"])
 def get_playlist():
     data = request.get_json(silent=True) or {}
+    _apply_request_cookies(data)
     url  = data.get("url", "").strip()
     if not url: return jsonify({"error": "No URL provided"}), 400
     if not url.lower().startswith(("http://", "https://")):
@@ -1921,6 +1964,7 @@ def get_playlist():
 @app.route("/api/download", methods=["POST"])
 def start_download():
     data = request.get_json(silent=True) or {}
+    _apply_request_cookies(data)
     url  = data.get("url","").strip()
     if not url: return jsonify({"error": "No URL provided"}), 400
     if not url.lower().startswith(("http://", "https://")):
@@ -3032,8 +3076,7 @@ def _run_subfetch(fetch_id, sub_id, url, force, need_meta):
             except Exception:
                 pass
 
-        r = _run_yt(
-            sys.executable, "-m", "yt_dlp",
+        r = _ytdlp(
             "--flat-playlist", "-j",
             "--playlist-end", "200",
             "--extractor-args", "youtubetab:approximate_date",

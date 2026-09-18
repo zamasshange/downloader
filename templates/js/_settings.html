@@ -747,6 +747,19 @@ async function refreshCookieCard() {
       if (notLoaded) notLoaded.style.display = 'none';
       if (loaded)    loaded.style.display = 'flex';
     } else {
+      try {
+        const stored = localStorage.getItem('xhuma_cookies');
+        if (stored && !refreshCookieCard._restoring) {
+          refreshCookieCard._restoring = true;
+          await fetch('/api/cookies/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: stored })
+          });
+          refreshCookieCard._restoring = false;
+          return refreshCookieCard();
+        }
+      } catch (e) { refreshCookieCard._restoring = false; }
       badge.textContent   = i18nGet('cookies.status.not_loaded') || 'Cookies: not loaded';
       badge.className     = 'vbadge vb-upd';
       badge.style.cssText = 'font-size:.72rem;padding:3px 10px';
@@ -783,6 +796,7 @@ async function saveCookiesText(text) {
   }
   const r = await post('/api/cookies/save', { content: text });
   if (r.error) { toast((i18nGet('toast.settings.cookies_save_failed') || 'Failed to save cookies') + ': ' + r.error, 'err'); return; }
+  try { localStorage.setItem('xhuma_cookies', text); } catch {}
   toast(i18nGet('toast.cookies.loaded') || 'cookies.txt loaded — authenticated downloads enabled', 'ok');
   await refreshCookieCard();
 }
@@ -799,6 +813,7 @@ async function clearCookies() {
   try {
     const r = await post('/api/cookies/clear', {});
     if (r.error) { toast((i18nGet('toast.settings.cookies_remove_failed') || 'Failed to remove cookies') + ': ' + r.error, 'err'); return; }
+    try { localStorage.removeItem('xhuma_cookies'); } catch {}
     toast(i18nGet('toast.settings.cookies_removed') || 'Cookies removed', 'ok');
     await refreshCookieCard();
   } catch (e) { toast((i18nFmt('toast.plugins.error_prefix', e.message))||('Error: ' + e.message), 'err'); }

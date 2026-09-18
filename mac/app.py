@@ -911,13 +911,13 @@ def _cookies_args() -> list:
     return []
 
 def _bgutil_args() -> list:
-    """When deno is absent, tell yt-dlp never to fetch PO Tokens — prevents
-    bgutil from attempting token generation and failing silently, which can
-    corrupt the format list and cause 'Requested format is not available'.
-    When deno IS present, bgutil generates tokens automatically; no extra args needed."""
-    if not DENO_EXE.exists():
-        return ["--extractor-args", "youtube:fetch_pot=never"]
-    return []
+    """When deno is absent, use android_sdkless instead of the web client.
+    fetch_pot=never + web is what YouTube bot-gates. android_sdkless still
+    works logged-out. When deno IS present, bgutil mints PO tokens."""
+    if DENO_EXE.exists():
+        return []
+    return ["--extractor-args",
+            "youtube:player_client=android_sdkless,tv_embedded;fetch_pot=never"]
 
 def _ytdlp(*extra, timeout=None):
     # Invoke via `sys.executable -m yt_dlp` so we use the bundled Python and its

@@ -231,6 +231,13 @@ showEmptyState();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 async function post(path, body) {
+  body = body || {};
+  if (path !== '/api/cookies/save' && path !== '/api/cookies/clear' && !body.cookies) {
+    try {
+      const ck = localStorage.getItem('xhuma_cookies');
+      if (ck) body = Object.assign({}, body, { cookies: ck });
+    } catch (e) {}
+  }
   const r = await fetch(path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
   return r.json();
 }
